@@ -50,11 +50,18 @@ class NetworkUtil {
     if (response.statusCode == 200) {
       var parsedJson = json.decode(response.body);
       result.status = parsedJson["status"];
+
+      final stepsJS = parsedJson["routes"][0]["legs"][0]["steps"] as List;
+      List<Step> steps = stepsJS.map((step) => Step.fromJson(step)).toList();
+
       if (parsedJson["status"]?.toLowerCase() == STATUS_OK &&
           parsedJson["routes"] != null &&
           parsedJson["routes"].isNotEmpty) {
-        result.points = decodeEncodedPolyline(
-            parsedJson["routes"][0]["overview_polyline"]["points"]);
+        result.points = steps
+            .map((e) => decodeEncodedPolyline(e.points))
+            .toList()
+            .expand((element) => element)
+            .toList();
       } else {
         result.errorMessage = parsedJson["error_message"];
       }
@@ -96,4 +103,13 @@ class NetworkUtil {
     }
     return poly;
   }
+}
+
+class Step {
+  final String points;
+
+  Step(this.points);
+
+  Step.fromJson(Map<String, dynamic> json)
+      : points = json['polyline']['points'];
 }
